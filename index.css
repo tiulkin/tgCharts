@@ -10,6 +10,11 @@ dark #f0f0f0
     background:transparent;
 }
 
+.chart--dark {
+    position: relative;
+    height: 500px;
+}
+
 .navigation-bar--dark {
     position: relative;
     height: 100px;

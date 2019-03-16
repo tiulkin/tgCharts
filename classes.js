@@ -1,13 +1,16 @@
 import data from './chart_data.js'
 
 const svgNS = "http://www.w3.org/2000/svg";
+var  xlinkns = "http://www.w3.org/1999/xlink";
 const axisYLinesCount = 5;
 const axisXSize = 1000;
-const axisYSize = 100;
+const axisYSize = 700;
+const axisYNavigationSize = 100;
 const navigationWindowResizeTrheshold = 15;
 
 const themes = {
     dark: {
+        chartArea: 'chart--dark',
         navigationBar: 'navigation-bar--dark',
         navigationForegroundLeft: 'navigation-bar__foreground-left--dark',
         navigationForegroundWindow: 'navigation-bar__foreground-window--dark',
@@ -15,15 +18,20 @@ const themes = {
     }
 };
 
+
 class Diagram {
     constructor(data) {
         this.root = document.createElement('div');
+
+        this.chartArea = document.createElement('div');
+        this.chart = document.createElementNS(svgNS, 'svg');
+
         this.navigationBar = document.createElement('div');
         this.navigationChart = document.createElementNS(svgNS, 'svg');
         this.navigationForegroundLeft = document.createElement('div');
         this.navigationForegroundRight = document.createElement('div');
         this.navigationForegroundWindow = document.createElement('div');
-        this.chart = document.createElementNS(svgNS, 'svg');
+
         this.axisX = {};
         this.lines = {};
         this.dataLength = 0;
@@ -39,8 +47,6 @@ class Diagram {
         }
 
         this.processData(data);
-        this.axisY = Array(axisYLinesCount)
-            .map((item, index) => Math.ceil((this.maxY / axisYLinesCount) * (index + 1))).reverse();
 
         this.initCanvas();
         setTimeout(this.initEvents, 1000);
@@ -52,7 +58,7 @@ class Diagram {
         if (callback) callback();
     }
 
-    setClassnames(theme) {
+    setClassnames = theme => {
         Object.keys(theme).forEach(elementName => {
             const classNames = theme[elementName];
             if (classNames) {
@@ -79,58 +85,116 @@ class Diagram {
                 }
             }
             if (columnType === 'line') {
-                const [maxValue, minValue] = columnData.slice(1).reduce((result, value) => [Math.max(result[0], value), Math.max(result[1], value)], [0, 0]);
-
-                this.maxValue = Math.max(maxValue, this.maxValue || 0);
                 this.lines[columnId] = {
                     id: columnId,
                     name: data.names[columnId],
                     color: data.colors[columnId],
-                    start: columnData[1],
-                    maxValue: maxValue,
-                    minValue: minValue,
-                    rawData: columnData.slice(1)
+                    rawData: columnData.slice(1),
+                    hidden: false
                 }
             }
-            this.multiplierY = axisYSize / this.maxValue;
-            console.log(this.multiplierY, this.maxValue);
-            Object.values(this.lines).forEach(line => {
-                line.chartData = line.rawData.reduce((result, value, index) =>
-                    `${result} ${Math.ceil(this.multiplierX * index)},${Math.ceil(this.multiplierY * (this.maxValue - value))} `, '');
-            })
-        })
+        });
     };
-    setNavigationWindowDimensions = () => {
+    updateNavigationWindowDimensions = () => {
         this.navigationForegroundLeft.style.right = `${100 - this.state.navigationWindowPositionLeft}%`;
         this.navigationForegroundWindow.style.left = `${this.state.navigationWindowPositionLeft}%`;
         this.navigationForegroundWindow.style.right = `${100 - this.state.navigationWindowPositionLeft - this.state.navigationWindowWidth}%`;
         this.navigationForegroundRight.style.left = `${this.state.navigationWindowPositionLeft + this.state.navigationWindowWidth}%`;
+        this.refreshChart();
     };
-    initCanvas = () => {
+    refreshMaxValues = () => {
+        this.maxValue = 0;
+        this.maxVisibleValue = 0;
+        this.visibleData = {
+            from: Math.floor(this.dataLength / 100 * this.state.navigationWindowPositionLeft),
+            to: Math.ceil(this.dataLength / 100 * this.state.navigationWindowPositionLeft + this.state.navigationWindowWidth)
+        };
+
         Object.values(this.lines).forEach(line => {
-            const polyline = document.createElementNS(svgNS, 'polyline');
-
-            polyline.setAttribute('stroke-width', 2);
-            polyline.setAttribute('stroke', line.color);
-            polyline.setAttribute('class', 'line');
-            polyline.setAttribute('points', line.chartData);
-
-            this.navigationChart.appendChild(polyline);
+            if (!line.hidden) {
+                const [maxValue, maxVisibleValue] =
+                    line.rawData.reduce((result, value, index) =>
+                        [Math.max(result[0], value), Math.max(result[1], value)], [0, 0]);
+                line.maxValue = maxValue;
+                this.maxValue = Math.max(maxValue, this.maxValue || 0);
+            }
         });
+        this.multiplierYNavigation = axisYSize / this.maxValue;
+        this.multiplierYChart = axisYSize / this.maxVisibleValue;
+
+        this.axisYMarks = Array(axisYLinesCount)
+            .map((item, index) => Math.ceil((this.maxValue / axisYLinesCount) * (index + 1))).reverse();
+    };
+    addLineToChart = (line, start, end) => {
+        const defs = document.createElementNS(svgNS, 'def');
+        const lineSymbol = document.createElementNS(svgNS, 'symbol');
+        const polyline = document.createElementNS(svgNS, 'polyline');
+        line.chartData = line.rawData.reduce((result, value, index) =>
+            `${result} ${Math.ceil(this.multiplierX * index)},${Math.ceil(this.multiplierYNavigation * (this.maxValue - value))} `, '');
+        line.chartData1 = line.rawData.reduce((result, value, index) =>
+            `${result} ${Math.ceil(this.multiplierX * index)},${Math.ceil(this.multiplierYNavigation * (this.maxValue - value))} `, '');
+        polyline.setAttribute('stroke-width', 2);
+        polyline.setAttribute('stroke', line.color);
+        polyline.setAttribute('class', 'line');
+        polyline.setAttribute('points', line.chartData);
+        lineSymbol.setAttribute('id', line.id);
+        lineSymbol.appendChild(polyline);
+        defs.appendChild(lineSymbol);
+        this.navigationChart.appendChild(defs);
+        const navigationLine = document.createElementNS(svgNS, 'use');
+        const chartLine = document.createElementNS(svgNS, 'use');
+        navigationLine.setAttributeNS(xlinkns, 'href','#'+line.id);
+        navigationLine.setAttribute('x', 0);
+        navigationLine.setAttribute('y', 0);
+        navigationLine.setAttribute('transform', 'scale(1,0.15)');
+        navigationLine.setAttribute('height', '700%');
+        chartLine.setAttributeNS(xlinkns, 'href','#'+line.id);
+        chartLine.setAttribute('x', 0);
+        chartLine.setAttribute('y', 0);
+
+        this.navigationChart.appendChild(navigationLine);
+        this.chart.appendChild(chartLine);
+
+    };
+    updateCharts = () => {
+        this.refreshMaxValues();
+        Object.values(this.lines).forEach(line => {
+            console.log(line);
+            this.addLineToChart(line)
+        });
+    };
+    refreshChart(){
+        this.chart.setAttribute('viewBox', `0 0 ${axisXSize} ${axisYSize}`);
+    }
+    initCanvas = () => {
+        this.chart.setAttribute('width', '100%');
+        this.chart.setAttribute('height', '100%');
+        this.chart.setAttribute('preserveAspectRatio', 'none');
+        this.chart.setAttribute('viewBox', `0 0 ${axisXSize} ${axisYSize}`);
+        this.chart.setAttribute('class', 'navigation');
+
+        this.chartArea.appendChild(this.chart);
+
         this.navigationChart.setAttribute('width', '100%');
         this.navigationChart.setAttribute('height', '100%');
         this.navigationChart.setAttribute('preserveAspectRatio', 'none');
-        this.navigationChart.setAttribute('viewBox', `0 0 ${axisXSize} ${axisYSize}`);
+        this.navigationChart.setAttribute('viewBox', `0 0 ${axisXSize} ${axisYNavigationSize}`);
         this.navigationChart.setAttribute('class', 'navigation');
 
         this.navigationBar.appendChild(this.navigationChart);
         this.navigationBar.appendChild(this.navigationForegroundLeft);
         this.navigationBar.appendChild(this.navigationForegroundWindow);
         this.navigationBar.appendChild(this.navigationForegroundRight);
+
         this.setClassnames(themes[this.state.theme]);
+        this.root.appendChild(this.chartArea);
         this.root.appendChild(this.navigationBar);
         document.getElementById('wrapper').appendChild(this.root);
-        this.setNavigationWindowDimensions();
+
+        this.updateNavigationWindowDimensions();
+
+        this.updateCharts();
+
     }
 
     touchStartHandler = e => {
@@ -162,14 +226,14 @@ class Diagram {
                     const windowPositionLeftInPx = this.state.navigationWindowPositionLeft * this.navigationBar.offsetWidth / 100;
                     this.state.navigationWindowPositionLeft =
                         (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
-                    this.setNavigationWindowDimensions();
+                    this.updateNavigationWindowDimensions();
                 }
             }
             if (this.state.mode === 'resizeLeft' && oldX) {
                 const windowWithInPx = this.state.navigationWindowWidth * this.navigationBar.offsetWidth / 100;
                 this.state.navigationWindowWidth =
                     (windowWithInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
-                this.setNavigationWindowDimensions();
+                this.updateNavigationWindowDimensions();
             }
             if (this.state.mode === 'resizeRight' && oldX) {
                 const windowWithInPx = this.state.navigationWindowWidth * this.navigationBar.offsetWidth / 100;
@@ -178,7 +242,7 @@ class Diagram {
                     (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
                 this.state.navigationWindowWidth =
                     (windowWithInPx - this.state.pointerCoords.x + oldX) / this.navigationBar.offsetWidth * 100;
-                this.setNavigationWindowDimensions();
+                this.updateNavigationWindowDimensions();
             }
         }
         e.preventDefault();
