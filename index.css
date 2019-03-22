@@ -1,9 +1,13 @@
 body {
     margin: 0 10px;
     box-sizing:border-box;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #ccc;
 }
 
-dark #f0f0f0
+.hidden {
+    display: none;
+}
 
 #wrapper {
     width:100%;
@@ -14,11 +18,47 @@ dark #f0f0f0
     position: relative;
     height: 500px;
 }
+.chart-button {
+    display: inline-block;
+    height: 46px;
+    border: #ccc solid 1px;
+    border-radius: 46px 46px;
+    margin-right: 20px;
+    margin-top: 20px;
+}
+.chart-button-svg {
+    height: 46px;
+    margin-left: 10px;
+}
+.chart-button-name {
+    display: inline-block;
+    margin-left: 10px;
+    min-width :50px;
+    text-align: left;
+    line-height: 46px;
+    height: 46px;
+    float: right;
+}
+.axis-x-container {
+    font-size: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+.axis-x-label {
+    width: 35px;
+    line-height: 20px;
+}
+
+.axis-x-container--dark {
+    color: #ccc;
+}
 
 .navigation-bar--dark {
     position: relative;
-    height: 100px;
+    height: 50px;
 }
+
 .navigation-bar__foreground-left--dark {
     background-color: #e1e9ef;
     position: absolute;
@@ -49,8 +89,44 @@ dark #f0f0f0
     border-bottom: 3px solid #96ccf0;
     opacity: 0.5;
 }
+.navigation-bar__button {
+    position:absolute;
+    margin: -35px 0 0 -35px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: rgba(111,148,182,0.1);
+}
+.navigation-bar__button--pressed {
+    animation: anim-effect 0.3s forwards;
+ }
+.chart-label-x {
+    font-size: 12px;
+    left: 0;
+    color: #ccc;
+    position: absolute;
+}
+.chart-line-x {
+    height: 1px;
+    left: 0;
+    right: 0;
+    background-color: #ccc;
+    position: absolute;
+    z-index: -1;
+}
 
 
+@keyframes anim-effect {
+    0% {
+        transform: scale3d(0.3, 0.3, 1);
+    }
+    100% {
+        opacity: 1;
+    }
+}
 .line {
     fill: none;
 }
