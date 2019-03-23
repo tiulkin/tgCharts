@@ -12,11 +12,13 @@ body {
 #wrapper {
     width:100%;
     background:transparent;
+    overflow: hidden;
 }
 
 .chart--dark {
     position: relative;
     height: 500px;
+    overflow: hidden;
 }
 .chart-button {
     display: inline-block;
@@ -103,13 +105,13 @@ body {
 .navigation-bar__button--pressed {
     animation: anim-effect 0.3s forwards;
  }
-.chart-label-x {
+.chart-label-y {
     font-size: 12px;
     left: 0;
     color: #ccc;
     position: absolute;
 }
-.chart-line-x {
+.chart-line-y {
     height: 1px;
     left: 0;
     right: 0;
@@ -117,6 +119,23 @@ body {
     position: absolute;
     z-index: -1;
 }
+
+.chart-label-x {
+    font-size: 12px;
+    left: 0;
+    color: #ccc;
+    position: absolute;
+}
+
+.tooltip--dark {
+    position: absolute;
+    top:0;
+    left:0;
+    height: 200px;
+    width: 200px;
+    z-index: 1;
+}
+
 
 
 @keyframes anim-effect {

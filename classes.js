@@ -24,7 +24,6 @@ const svgNS = "http://www.w3.org/2000/svg";
 const htmlNS = "http://www.w3.org/1999/xhtml";
 
 const axisYLinesCount = 5;
-const axisXSize = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 const axisYSize = 700;
 const offsetY = 30;
 const labelXWith = 35;
@@ -39,7 +38,9 @@ const themes = {
         navigationForegroundLeft: 'navigation-bar__foreground-left--dark',
         navigationForegroundWindow: 'navigation-bar__foreground-window--dark',
         navigationForegroundRight: 'navigation-bar__foreground-right--dark',
-        navigationButton: 'navigation-bar__button'
+        navigationButton: 'navigation-bar__button',
+        tooltip: 'tooltip--dark'
+
     }
 };
 
@@ -64,12 +65,14 @@ class Diagram {
 
         this.buttonsContainer = document.createElement('div');
 
+        this.tooltip = document.createElement('div');
+
         this.axisX = {};
         this.lines = {};
         this.dataLength = 0;
         this.maxValue = 0;
         this.maxVisibleValue = 0;
-        this.visibleData = {from:0, to:0};
+        this.visibleData = {from: 0, to: 0};
         this.state = {
             theme: 'dark',
             navigationWindowWidth: 30,
@@ -77,6 +80,8 @@ class Diagram {
             isDragging: false,
             pointerCoords: {}
         }
+        this.axisXSize = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+        this.axisYElements = {};
 
         this.processData(data);
 
@@ -99,7 +104,7 @@ class Diagram {
 
     processData = data => {
         this.dataLength = data.columns[0].length;
-        this.multiplierX = axisXSize / this.dataLength;
+        this.multiplierX = this.axisXSize / this.dataLength;
         data.columns.forEach(columnData => {
             const columnId = columnData[0];
             const columnType = data.types[columnId];
@@ -110,7 +115,7 @@ class Diagram {
                     max: columnData[this.dataLength - 1],
                     htmlElements: columnData
                         .slice(1)
-                        .map( stamp => {
+                        .map(stamp => {
                             const element = document.createElement('span');
                             element.innerHTML = (new Date(stamp)).toDateString().split(' ').slice(1, 3).join(' ');
                             element.classList.add('axis-x-label');
@@ -128,7 +133,7 @@ class Diagram {
                     color: data.colors[columnId],
                     rawData: columnData.slice(1),
                     hidden: false
-                }
+                };
             }
         });
     };
@@ -142,15 +147,14 @@ class Diagram {
         line.navigationChartData = line.rawData.reduce((result, value, index) =>
             `${result} ${Math.ceil(this.multiplierX * index)},${Math.floor(this.multiplierYNavigation * (this.maxValue - value))} `, '');
 
-        line.chartData = line.rawData.reduce((result, value, index) =>
-            `${result} ${Math.ceil(this.multiplierXChart * index)},${Math.floor(this.multiplierYChart * (this.maxVisibleValue - value))} `, '');
-
+        line.chartData = [];
 
         polylineChart.setAttribute('stroke-width', 3);
         polylineChart.setAttribute('stroke', line.color);
         polylineChart.setAttribute('class', 'line');
-        polylineChart.setAttribute('points', line.chartData);
         this.chartGroup.appendChild(polylineChart);
+
+        line.polyline = polylineChart;
 
         polylineNavigation.setAttribute('stroke-width', 1);
         polylineNavigation.setAttribute('stroke', line.color);
@@ -158,40 +162,55 @@ class Diagram {
         polylineNavigation.setAttribute('points', line.navigationChartData);
 
         this.navigationChart.appendChild(polylineNavigation);
+
+
+//        this.polylineChart.addEventListener('mousleave', this.touchHandler, false);
+
+
     };
 
-    updateCharts = () => {
-        this.refreshChart();
-        this.axisYMarks.forEach( value => {
-            const axisX = document.createElement('div');
-            const axisXLabel = document.createElement('span');
+    refreshChartData = (line) => {
+        line.chartData = line.rawData.reduce((result, value, index) =>
+            `${result} ${Math.ceil(this.multiplierXChart * index)},${Math.floor(this.multiplierYChart * (this.maxVisibleValue - value))} `, '');
+        line.polyline.setAttribute('points', line.chartData);
+    };
 
-            axisXLabel.setAttribute('class', 'chart-label-x');
-            axisXLabel.style.bottom = value * this.multiplierYChart + 5 + 'px';
-            axisXLabel.innerHTML = value;
-            this.chartArea.appendChild(axisXLabel);
-
-            axisX.setAttribute('class', 'chart-line-x');
-            axisX.style.bottom = value * this.multiplierYChart + 'px';
-            this.chartArea.appendChild(axisX);
-
-        });
-        const axisXLabelsContainerWith = this.dataLength * this.multiplierXChart - labelXWith/2;
-        const axisXLabelsRatio = Math.ceil(this.dataLength / ( axisXLabelsContainerWith / labelXWith));
-
-        console.log(axisXLabelsContainerWith, axisXLabelsRatio);
+    refreshXLabelsVisibility = () => {
+        const axisXLabelsContainerWith = this.dataLength * this.multiplierXChart - labelXWith / 2;
+        const axisXLabelsRatio = Math.ceil(this.dataLength / (axisXLabelsContainerWith / labelXWith));
 
         this.axisXLabelsContainer.style.width = axisXLabelsContainerWith + 'px';
-
-        this.axisX.htmlElements.forEach( (element, index) => {
-            if (! (index % axisXLabelsRatio)) {
+        this.axisX.htmlElements.forEach((element, index) => {
+            if (!(index % axisXLabelsRatio)) {
                 element.classList.remove('hidden')
             } else element.classList.add('hidden')
         });
+    };
 
-        Object.values(this.lines).forEach(line => {
-            this.addLineToChart(line)
+    updateCharts = () => {
+        console.log('updating');
+        this.refreshChart();
+        this.axisYMarks.forEach((value, index) => {
+            if (!this.axisYElements[index]) {
+                this.axisYElements[index] = {
+                    label: document.createElement('span'),
+                    line: document.createElement('div')
+                }
+                this.chartArea.appendChild(this.axisYElements[index].label);
+                this.chartArea.appendChild(this.axisYElements[index].line);
+                this.axisYElements[index].label.setAttribute('class', 'chart-label-y');
+                this.axisYElements[index].line.setAttribute('class', 'chart-line-y');
+            }
+            this.axisYElements[index].label.style.bottom = `calc( ${(100 / axisYLinesCount * (axisYLinesCount - index - 1))}% + 5px )`;
+            this.axisYElements[index].line.style.bottom = (100 / axisYLinesCount * index) + '%';
+            this.axisYElements[index].label.innerHTML = value;
+
         });
+        Object.values(this.lines).forEach(line => {
+            if (!line.polyline) this.addLineToChart(line);
+            this.refreshChartData(line);
+        });
+        this.refreshXLabelsVisibility();
     };
 
     refreshMaxValues = () => {
@@ -218,21 +237,20 @@ class Diagram {
         });
         this.multiplierYNavigation = axisYNavigationSize / this.maxValue;
         this.multiplierYChart = axisYSize / this.maxVisibleValue;
-        this.multiplierXChart = this.multiplierXChart || axisXSize / (this.visibleData.to - this.visibleData.from );
+        this.multiplierXChart = this.multiplierXChart || this.axisXSize / (this.visibleData.to - this.visibleData.from);
 
-        this.axisYMarks = [...Array(axisYLinesCount) ]
+        this.axisYMarks = [...Array(axisYLinesCount)]
             .map((item, index) => Math.ceil((this.maxVisibleValue / axisYLinesCount) * index)).reverse();
     };
 
     refreshChartViewboxSize() {
         this.chart.setAttribute('viewBox',
-            `${ 0 } 0 ${ this.state.navigationWindowWidth  * this.multiplierXChart * this.dataLength / 100} ${axisYSize}`);
+            `${0} 0 ${this.state.navigationWindowWidth * this.multiplierXChart * this.dataLength / 100} ${axisYSize}`);
     }
 
     transformChart = mode => {
-        console.log(mode);
-        this.chartGroup.setAttribute('transform',`translate(${-(this.state.navigationWindowPositionLeft ) * this.multiplierXChart * this.dataLength / 100}, 0)`);
-        if (mode === 'move') this.axisXLabelsContainer.style.transform = `translateX(${-(this.state.navigationWindowPositionLeft ) * this.multiplierXChart * this.dataLength / 100}px)`;
+        this.chartGroup.setAttribute('transform', `translate(${-(this.state.navigationWindowPositionLeft) * this.multiplierXChart * this.dataLength / 100}, 0)`);
+        if (mode === 'move') this.axisXLabelsContainer.style.transform = `translateX(${-(this.state.navigationWindowPositionLeft) * this.multiplierXChart * this.dataLength / 100}px)`;
     };
 
     refreshChart() {
@@ -259,7 +277,7 @@ class Diagram {
         this.navigationChart.setAttribute('width', '100%');
         this.navigationChart.setAttribute('height', '100%');
         this.navigationChart.setAttribute('preserveAspectRatio', 'none');
-        this.navigationChart.setAttribute('viewBox', `0 0 ${axisXSize} ${axisYNavigationSize}`);
+        this.navigationChart.setAttribute('viewBox', `0 0 ${this.axisXSize} ${axisYNavigationSize}`);
         this.navigationChart.setAttribute('class', 'navigation');
 
         this.navigationBar.appendChild(this.navigationChart);
@@ -276,21 +294,22 @@ class Diagram {
         this.root.appendChild(this.axisXLabelsContainer);
         this.root.appendChild(this.navigationBar);
         this.root.appendChild(this.buttonsContainer);
+        this.chartArea.appendChild(this.tooltip);
 
         document.getElementById('wrapper').appendChild(this.root);
 
     }
 
     createButtons = () => {
-        Object.values(this.lines).forEach( (line) => {
-            line.lineButtonElement= document.createElement('div');
+        Object.values(this.lines).forEach((line) => {
+            line.lineButtonElement = document.createElement('div');
             line.lineButtonElement.classList.add('chart-button');
             const checkmarkSVG = document.createElementNS(svgNS, 'svg');
             const checkmarkSVGCheck = document.createElementNS(svgNS, 'path');
             const checkmarkSVGCircle = document.createElementNS(svgNS, 'circle');
             const nameBox = document.createElement('span');
 
-            nameBox.innerText=line.name;
+            nameBox.innerText = line.name;
             nameBox.classList.add('chart-button-name');
 
             checkmarkSVGCircle.setAttribute('cx', 320);
@@ -323,11 +342,11 @@ class Diagram {
     };
 
     animateButtom = (mode, x, y) => {
-        this.navigationButton.style.top = y+'px';
-        this.navigationButton.style.left = x-10+'px';
+        this.navigationButton.style.top = y + 'px';
+        this.navigationButton.style.left = x - 10 + 'px';
 
-        if (mode ==='show') this.navigationButton.classList.add('navigation-bar__button--pressed');
-        if (mode ==='hide') this.navigationButton.classList.remove('navigation-bar__button--pressed');
+        if (mode === 'show') this.navigationButton.classList.add('navigation-bar__button--pressed');
+        if (mode === 'hide') this.navigationButton.classList.remove('navigation-bar__button--pressed');
     };
 
     updateNavigationWindowDimensions = () => {
@@ -337,14 +356,23 @@ class Diagram {
         this.navigationForegroundRight.style.left = `${this.state.navigationWindowPositionLeft + this.state.navigationWindowWidth}%`;
         this.refreshChart();
     };
+    touchHandler = (e) => {
+        const touchX = (e.type === 'touchstart' ? e.touches[0].clientX : e.clientX);
+        const touchY = (e.type === 'touchstart' ? e.touches[0].clientY : e.clientY);
 
+        this.tooltip.style.left = touchX + 'px';
+        this.tooltip.style.top = touchY + 'px';
+        console.log(this.tooltip.style.top, touchY + 'px');
+        console.log(this.tooltip.style.top, touchY + 'px');
+        console.log(this.tooltip);
+    }
     touchStartHandler = e => {
         let mode = 'move';
         const rect = e.target.getBoundingClientRect();
         const touchX = (e.type === 'touchstart' ? e.touches[0].clientX : e.clientX);
         const touchY = (e.type === 'touchstart' ? e.touches[0].clientY : e.clientY);
 
-        this.animateButtom('show', touchX,touchY - rect.top);
+        this.animateButtom('show', touchX, touchY - rect.top);
 
         if (touchX - rect.left < navigationWindowResizeTrheshold) mode = 'resizeRight';
         if (touchX - rect.left + navigationWindowResizeTrheshold > rect.width) mode = 'resizeLeft';
@@ -355,6 +383,8 @@ class Diagram {
         console.log('end');
         this.state.mode = null;
         this.state.pointerCoords = {};
+        this.multiplierXChart = null;
+        this.updateCharts();
         this.animateButtom('hide');
         e.preventDefault();
     };
@@ -375,15 +405,38 @@ class Diagram {
                 const windowPositionLeftInPx = this.state.navigationWindowPositionLeft * this.navigationBar.offsetWidth / 100;
                 const windowWithInPx = this.state.navigationWindowWidth * this.navigationBar.offsetWidth / 100;
 
+                const navigationWindowPositionLeft =
+                    (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
+                const navigationWindowWidth =
+                    (windowWithInPx - this.state.pointerCoords.x + oldX) / this.navigationBar.offsetWidth * 100;
+
                 switch (this.state.mode) {
                     case 'move': {
-                        this.state.navigationWindowPositionLeft =
-                            (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
+                        if (navigationWindowPositionLeft < 0) {
+                            this.state.navigationWindowPositionLeft = 0
+                        } else {
+                            if (navigationWindowPositionLeft + this.state.navigationWindowWidth > 100) {
+                                this.state.navigationWindowPositionLeft = 100 - this.state.navigationWindowWidth;
+                            } else
+                                this.state.navigationWindowPositionLeft =
+                                    (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
+                        }
+                        this.refreshMaxValues();
+                        this.updateNavigationWindowDimensions();
+                        this.transformChart(this.state.mode);
                         break;
                     }
                     case 'resizeLeft': {
-                        this.state.navigationWindowWidth =
-                            (windowWithInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
+                        if (navigationWindowWidth + navigationWindowPositionLeft > 100) {
+                            this.state.navigationWindowWidth = 100 - this.state.navigationWindowPositionLeft;
+                        } else {
+                            this.state.navigationWindowWidth =
+                                (windowWithInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
+                        }
+                        this.refreshMaxValues();
+                        this.updateNavigationWindowDimensions();
+                        this.transformChart(this.state.mode);
+                        this.refreshXLabelsVisibility();
                         break;
                     }
                     case 'resizeRight': {
@@ -391,17 +444,24 @@ class Diagram {
                             (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
                         this.state.navigationWindowWidth =
                             (windowWithInPx - this.state.pointerCoords.x + oldX) / this.navigationBar.offsetWidth * 100;
+                        this.refreshMaxValues();
+                        this.updateNavigationWindowDimensions();
+                        this.transformChart(this.state.mode);
+                        this.refreshXLabelsVisibility();
+
                     }
                     //this.chartGroup.setAttribute('transform', `scale(${this.state.navigationWindowWidth / 100}, 1)`);
                 }
-                this.refreshMaxValues();
-                this.updateNavigationWindowDimensions();
-                this.transformChart(this.state.mode);
-                // // this.scaleChart();
-                this.refreshChartViewboxSize();
             }
         }
         e.preventDefault();
+    };
+
+    resizeHandler = () => {
+        this.axisXSize = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+        this.multiplierXChart = null;
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = setTimeout(this.updateCharts, 50);
     };
     initEvents = () => {
         //this.navigationForegroundWindow.addEventListener('pointerdown', this.touchStartHandler, false);
@@ -414,6 +474,9 @@ class Diagram {
         this.navigationForegroundWindow.addEventListener('touchend', this.touchEndHandler, false);
         this.navigationForegroundWindow.addEventListener('mouseup', this.touchEndHandler, false);
         this.navigationForegroundWindow.addEventListener('mouseleave', this.touchEndHandler, false);
+
+        this.chartGroup.addEventListener('mouseover', this.touchHandler, false);
+        window.addEventListener('resize', this.resizeHandler);
     }
 }
 
