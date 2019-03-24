@@ -11,11 +11,13 @@ body.dark {
     color: white;
     fill:#242f3e;
 }
+button {
+    outline: 0;
+}
 
 #wrapper {
     width: 100%;
     background: transparent;
-    overflow: hidden;
 }
 #toggleThemeButton {
     position:fixed;
@@ -33,36 +35,13 @@ body.dark {
 }
 
 .chart-area {
-    margin-bottom: 50px;
+    overflow: hidden;
 }
 .chart {
     position: relative;
     height: 380px;
     overflow: hidden;
     margin-top: 10px;
-}
-.chart-button {
-    display: inline-block;
-    height: 46px;
-    border: #ccc solid 1px;
-    border-radius: 46px 46px;
-    margin-right: 20px;
-    margin-top: 20px;
-}
-
-.chart-button-svg {
-    height: 46px;
-    margin-left: 10px;
-}
-
-.chart-button-name {
-    display: inline-block;
-    margin-left: 10px;
-    min-width: 50px;
-    text-align: left;
-    line-height: 46px;
-    height: 46px;
-    float: right;
 }
 
 .axis-x-container {
@@ -268,4 +247,65 @@ body.dark {
 
 .line {
     fill: none;
+}
+
+.chart-button {
+    position: relative;
+    padding: 0;
+    display: inline-block;
+    height: 46px;
+    border: #ccc solid 1px;
+    border-radius: 46px 46px;
+    margin-right: 20px;
+    margin-top: 20px;
+    transition: all 0.4s ease-in;
+    transition: color 0.7s;
+    margin-bottom: 50px;
+}
+
+.chart-button-svg {
+    height: 46px;
+    margin-left: 10px;
+}
+
+.chart-button-name {
+    display: inline-block;
+    margin-left: 10px;
+    min-width: 50px;
+    text-align: left;
+    line-height: 46px;
+    height: 46px;
+    float: right;
+}
+
+.chart-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 25px;
+    margin: -35px 0 0 -35px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(111,148,182,0.1);
+    z-index: 5;
+}
+
+.chart-button.chart-button--click::after {
+    animation: chart-button-anim 0.5s forwards;
+}
+
+@keyframes chart-button-anim{
+    0% {
+        transform: scale3d(0.3, 0.3, 1);
+    }
+    25%, 50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: scale3d(1.2, 1.2, 1);
+    }
 }

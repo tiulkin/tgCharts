@@ -25,13 +25,13 @@ const htmlNS = "http://www.w3.org/1999/xhtml";
 
 const axisYLinesCount = 6;
 const axisYSize = 380;
-const offsetY = 30;
 const labelXWith = 35;
 const axisYNavigationSize = 40;
 const navigationWindowResizeTrheshold = 15;
 
 const themes = {
     dark: {
+        nextThemeName: 'Day Mode',
         chartArea: 'chart',
         chartName: 'chart-name',
         axisXLabelsContainer: 'axis-x-container',
@@ -49,6 +49,7 @@ const themes = {
 
     },
     light: {
+        nextThemeName: 'Night Mode',
         chartArea: 'chart',
         chartName: 'chart-name',
         axisXLabelsContainer: 'axis-x-container',
@@ -393,13 +394,13 @@ class Diagram {
         this.root.appendChild(this.chartArea);
         this.root.appendChild(this.axisXLabelsContainer);
         this.root.appendChild(this.navigationBar);
-        this.root.appendChild(this.buttonsContainer);
 
         this.chartArea.appendChild(this.tooltip);
 
         this.root.classList.add('chart-area');
 
         document.getElementById('wrapper').appendChild(this.root);
+        document.getElementById('wrapper').appendChild(this.buttonsContainer);
 
     }
 
@@ -436,6 +437,7 @@ class Diagram {
             checkmarkSVG.appendChild(checkmarkSVGCheck);
             line.lineButtonElement.appendChild(checkmarkSVG);
             line.lineButtonElement.appendChild(nameBox);
+            line.checkmarkSVG = checkmarkSVG;
             line.checkmarkSVGCheck = checkmarkSVGCheck;
             line.lineButtonElement.addEventListener('click', this.toggleLineVisibility, true);
             this.buttonsContainer.appendChild(line.lineButtonElement);
@@ -458,9 +460,12 @@ class Diagram {
     };
     toggleLineVisibility = (e) => {
         this.toggleTooltip();
-        e.currentTarget.line.hidden = !e.currentTarget.line.hidden;
-        e.currentTarget.line.polyline.style.visibility = e.currentTarget.line.hidden ? 'hidden' : 'visible';
-        e.currentTarget.line.checkmarkSVGCheck.style.visibility = e.currentTarget.line.hidden ? 'hidden' : 'visible';
+        const element = e.currentTarget;
+        element.line.hidden = !element.line.hidden;
+        element.line.polyline.style.visibility = element.line.hidden ? 'hidden' : 'visible';
+        element.line.checkmarkSVGCheck.style.visibility = element.line.hidden ? 'hidden' : 'visible';
+        element.classList.add('chart-button--click');
+        setTimeout(() => element.classList.remove('chart-button--click'), 500);
         this.updateCharts(true);
     };
     toggleTooltip = (x, y) => {
@@ -567,9 +572,12 @@ class Diagram {
                                 this.state.navigationWindowPositionLeft =
                                     (windowPositionLeftInPx + deltaX) / this.navigationBar.offsetWidth * 100;
                         }
-                        this.refreshMaxValues();
-                        this.updateNavigationWindowDimensions();
-                        this.transformChart(this.state.mode);
+                        clearTimeout(this.moveTimeout);
+                        this.moveTimeout = setTimeout(() =>{
+                            this.refreshMaxValues();
+                            this.updateNavigationWindowDimensions();
+                            this.transformChart(this.state.mode);
+                        }, 1);
                         break;
                     }
                     case 'resizeLeft': {
@@ -580,9 +588,12 @@ class Diagram {
                                 (windowWithInPx + deltaX) / this.navigationBar.offsetWidth * 100;
                             if (this.state.navigationWindowWidth < 10) this.state.navigationWindowWidth = 10;
                         }
-                        this.multiplierXChart = null;
-                        this.updateNavigationWindowDimensions();
-                        this.updateCharts();
+                        clearTimeout(this.moveTimeout);
+                        this.moveTimeout = setTimeout(() =>{
+                            this.multiplierXChart = null;
+                            this.updateNavigationWindowDimensions();
+                            this.updateCharts();
+                        }, 1);
                         break;
                     }
                     case 'resizeRight': {
@@ -596,11 +607,13 @@ class Diagram {
                             this.state.navigationWindowWidth = newNavigationWindowWidth;
                         } else this.state.navigationWindowPositionLeft = 0;
                         if (this.state.navigationWindowWidth < 10) this.state.navigationWindowWidth = 10;
-                        this.multiplierXChart = null;
-                        this.updateNavigationWindowDimensions();
-                        this.updateCharts();
+                        clearTimeout(this.moveTimeout);
+                        this.moveTimeout = setTimeout(() =>{
+                            this.multiplierXChart = null;
+                            this.updateNavigationWindowDimensions();
+                            this.updateCharts();
+                        }, 1);
                     }
-                    //this.chartGroup.setAttribute('transform', `scale(${this.state.navigationWindowWidth / 100}, 1)`);
                 }
             }
         }
@@ -635,14 +648,15 @@ class Diagram {
 }
 
 
-function toggleTheme() {
+function toggleTheme(e) {
     document.body.classList.remove(theme);
     theme = theme === 'dark' ? 'light' : 'dark';
+    e.currentTarget.innerText = 'Switch to ' + themes[theme].nextThemeName;
     document.body.classList.add(theme);
     diagrams.forEach(diagram => diagram.changeTheme());
 }
 
-let theme = 'dark';
+let theme = 'light';
 document.body.classList.add(theme);
 
 const diagrams = data.map((chartData, index) => new Diagram(chartData, index+1));
