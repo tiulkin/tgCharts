@@ -1,23 +1,3 @@
-// Реализация
-// Т.к. эксперименты показали, что многократное масштабирование приводит с сильной потере качества тонких линий
-// было принято решение подстраивать значения под размер экрана на этапе построения графиков
-// Навигация:
-// По оси X viewBox имеет ширину равную ширине диаграммы, значения формируются исходя из коэффициента [ширина диаграммы / количество значений]
-// По оси Y viewBox имеет ширину равную высоте диаграммы, значения формируются исходя из коэффициента [высота диаграммы / максимальное значение среди всех линий
-// Диаграмма:
-// По оси X значения формируются исходя из коэффициента [ширина диаграммы / количество значений]
-// viewBox начинается со значения "коэффициент [ширина диаграммы / количество значений] * (100% - ширина окна в %) * ширина диаграммы"
-// ширина viewBox равна "коэффициент [ширина диаграммы / количество значений] * (ширина окна в %) * ширина диаграммы"
-
-// начинается со значения "коэффициент [ширина диаграммы / количество значений] * (100% - ширина окна в %) * (ширина окна в %)
-// Это позволяет не пересчитывать графи
-// По оси Y значения формируются исходя из коэффициента [высота диаграммы / максимальное ВИДИМОЕ значение среди ВИДИМЫХ линий
-// Масштаб графиков равен ширине видимого окна в %.
-// По оси X viewBox ширину равную ширине видимого "окна", значения формируются исходя из коэффициента [ширина диаграммы / количество значений]
-
-// значения  длина линии делается равной количеству значений
-// По оси Y количество делений делается равным
-
 import data from './chart_data.js'
 
 const svgNS = "http://www.w3.org/2000/svg";
@@ -210,9 +190,6 @@ class Diagram {
         line.tooltipLegend.appendChild(line.tooltipLegendName);
         this.tooltipLegendContainer.appendChild(line.tooltipLegend);
 
-//        this.polylineChart.addEventListener('mousleave', this.touchHandler, false);
-
-
     };
     getLineData = line => line.chartData = line.rawData.reduce((result, value, index) =>
         `${result} ${Math.ceil(this.multiplierXChart * index)},${Math.floor(this.multiplierYChart * (this.maxVisibleValue - value))} `, '');
@@ -269,14 +246,12 @@ class Diagram {
         });
         this.maxYValueChanged = null;
         if (animate) {
-            // this.maxYValueHasChanged = false;
             Object.values(this.lines).forEach(line => {
                 if (line.hidden) return;
                 if (!line.polyline) this.addLineToChart(line);
                 const newLineData = this.getLineData(line);
                 line.chartData = newLineData;
                 line.animateScale = document.createElementNS(svgNS, 'animate');
-                // this.animateScale.setAttribute('id', 'ssssss');
                 line.animateScale.setAttribute('dur', '0.3s');
                 line.animateScale.setAttribute('attributeName', 'points');
                 line.animateScale.setAttribute('to', newLineData);
@@ -287,9 +262,6 @@ class Diagram {
                     line.polyline.setAttribute('points', line.chartData);
                     line.polyline.removeChild(line.animateScale);
                 }, 400);
-
-                // line.chartData = newLineData;
-                // line.polyline.setAttribute('points', line.chartData);
             });
         } else {
             Object.values(this.lines).forEach(line => {
@@ -347,7 +319,7 @@ class Diagram {
             `${0} -10 ${this.state.navigationWindowWidth * this.multiplierXChart * (this.dataLength - 1) / 100} ${axisYSize}`);
     }
 
-    transformChart = mode => {
+    transformChart = () => {
         this.chartGroup.setAttribute('transform', `translate(${-(this.state.navigationWindowPositionLeft) * this.multiplierXChart * (this.dataLength - 1) / 100}, 0)`);
         this.axisXLabelsContainer.style.transform = `translateX(${-(this.state.navigationWindowPositionLeft) * this.multiplierXChart * (this.dataLength - 1) / 100}px)`;
     };
@@ -475,8 +447,7 @@ class Diagram {
                 if (line.circle) {
                     this.chartGroup.removeChild(line.circle);
                     delete (line.circle);
-                }
-                ;
+                };
             });
         } else {
             this.tooltip.style.display = 'block';
@@ -504,10 +475,12 @@ class Diagram {
         }
     }
     touchHandler = (e) => {
+        const rect = this.chartArea.getBoundingClientRect();
         const touchX = (e.type === 'touchstart' ? e.touches[0].clientX : e.clientX);
         const touchY = (e.type === 'touchstart' ? e.touches[0].clientY : e.clientY);
 
-        this.toggleTooltip(touchX, touchY);
+        this.refreshMaxValues();
+        this.toggleTooltip(touchX - rect.left, touchY - rect.top);
     }
     touchStartHandler = e => {
         this.toggleTooltip();
@@ -593,7 +566,7 @@ class Diagram {
                             this.multiplierXChart = null;
                             this.updateNavigationWindowDimensions();
                             this.updateCharts();
-                        }, 1);
+                        }, 3);
                         break;
                     }
                     case 'resizeRight': {
@@ -612,7 +585,7 @@ class Diagram {
                             this.multiplierXChart = null;
                             this.updateNavigationWindowDimensions();
                             this.updateCharts();
-                        }, 1);
+                        }, 3);
                     }
                 }
             }

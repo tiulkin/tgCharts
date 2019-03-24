@@ -222,6 +222,7 @@ button {
 }
 .tooltip-legend{
     flex: auto;
+    margin-right: 5px;
 }
 
 .tooltip-legend_value{
