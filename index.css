@@ -1,8 +1,15 @@
 body {
-    margin: 0 10px;
+    margin: 0 15px;
     box-sizing: border-box;
     font-family: Arial, Helvetica, sans-serif;
-    color: #ccc;
+    background-color: white;
+    color: black;
+    fill: white;
+}
+body.dark {
+    background-color: #242f3e;
+    color: white;
+    fill:#242f3e;
 }
 
 #wrapper {
@@ -10,14 +17,27 @@ body {
     background: transparent;
     overflow: hidden;
 }
+#toggleThemeButton {
+    position:fixed;
+    bottom:20px;
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    background: none;
+    border: none;
+    color: #36a8f1;
+    font-size: 16px;
+}
+.chart-name {
+    margin: 20px 0 0 20px;
+}
 
-.chart--dark {
+.chart {
     position: relative;
     height: 380px;
     overflow: hidden;
-    margin-top: 20px;
+    margin-top: 10px;
 }
-
 .chart-button {
     display: inline-block;
     height: 46px;
@@ -58,12 +78,21 @@ body {
     z-index: 1;
 }
 
-.navigation-bar--dark {
+.navigation-bar {
     position: relative;
     height: 60px;
 }
 
 .navigation-bar__foreground-left--dark {
+    background-color: #1f2a38;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    opacity: 0.7;
+    z-index: 1;
+}
+.navigation-bar__foreground-left--light {
     background-color: #e1e9ef;
     position: absolute;
     top: 0;
@@ -74,6 +103,16 @@ body {
 }
 
 .navigation-bar__foreground-right--dark {
+    background-color: #1f2a38;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    opacity: 0.7;
+    z-index: 1;
+}
+
+.navigation-bar__foreground-right--light {
     background-color: #e1e9ef;
     position: absolute;
     top: 0;
@@ -81,6 +120,19 @@ body {
     right: 0;
     opacity: 0.7;
     z-index: 1;
+}
+
+.navigation-bar__foreground-window--light {
+    background-color: transparent;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    border-top: 3px solid #40566b;
+    border-left: 10px solid #40566b;
+    border-right: 10px solid #40566b;
+    border-bottom: 3px solid #40566b;
+    opacity: 0.5;
 }
 
 .navigation-bar__foreground-window--dark {
@@ -131,6 +183,9 @@ body {
 .axis-x-container--dark {
     color: #96a2aa;
 }
+.axis-x-container--light {
+    color: #96a2aa;
+}
 
 
 .axis-y-label {
@@ -147,7 +202,7 @@ body {
     height: 1px;
     left: 0;
     right: 0;
-    background-color: #ccc;
+    background-color: #40566b;
     position: absolute;
     z-index: -1;
 }
@@ -157,37 +212,48 @@ body {
     padding: 10px;
     position: absolute;
     min-width: 100px;
-    border: #ccc 1x solid;
+    border: #000 1x solid;
+    border-radius: 4px 4px;
+    background-color: #253241;
+    box-shadow: 0px 0px 6px 0px rgba(200,200,200,0.5);
+    z-index: 2;
+}
+.tooltip--dark.tooltip-header{
+    color: white;
+}
+
+.tooltip--light {
+    display: none;
+    padding: 10px;
+    position: absolute;
+    min-width: 100px;
+    border: #40566b 1x solid;
     border-radius: 4px 4px;
     box-shadow: 0px 0px 6px 0px rgba(200,200,200,0.5);
     background-color: white;
     z-index: 2;
 }
 
-.tooltip-legend-container--dark {
+.tooltip-legend-container {
     display: flex;
     margin-top: 10px;
     width: 100%;
 }
-.tooltip-legend--dark {
+.tooltip-legend{
     flex: auto;
 }
 
-.tooltip-legend_value--dark {
+.tooltip-legend_value{
     font-weight: bold;
 }
-.tooltip-legend_name--dark {
+.tooltip-legend_name{
     font-size: 16px;
     margin: 5px;
 }
-.tooltip-header--dark {
-    color:black;
+.tooltip-header {
     font-weight: 400;
     margin: auto;
 }
-.tooltip__date--dark {
-}
-
 
 @keyframes anim-effect {
     0% {
@@ -200,37 +266,4 @@ body {
 
 .line {
     fill: none;
-}
-
-.explanation {
-    margin-bottom: 3em;
-    display: inline-block;
-}
-
-.chart {
-    width: 600px;
-    padding-left: 50px;
-    height: 300px;
-    margin: auto;
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-
-.chartMeasurements {
-    position: absolute;
-    top: 0;
-    left: 0px;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: space-between;
-    flex-direction: column;
-    text-align: left;
-    z-index: 1;
-
-.chartMeasurement {
-    width: 100%;
-    flex-grow: 1;
-
-
 }

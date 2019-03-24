@@ -32,29 +32,48 @@ const navigationWindowResizeTrheshold = 15;
 
 const themes = {
     dark: {
-        chartArea: 'chart--dark',
+        chartArea: 'chart',
+        chartName: 'chart-name',
         axisXLabelsContainer: 'axis-x-container',
-        navigationBar: 'navigation-bar--dark',
+        navigationBar: 'navigation-bar',
         navigationForegroundLeft: 'navigation-bar__foreground-left--dark',
         navigationForegroundWindow: 'navigation-bar__foreground-window--dark',
         navigationForegroundRight: 'navigation-bar__foreground-right--dark',
         navigationButton: 'navigation-bar__button',
         tooltip: 'tooltip--dark',
-        tooltipHeader: 'tooltip-header--dark',
-        tooltipLegendContainer: 'tooltip-legend-container--dark',
-        tooltipLegend: 'tooltip-legend--dark',
-        tooltipLegendValue: 'tooltip-legend__value--dark',
-        tooltipLegendName: 'tooltip-legend__name--dark'
+        tooltipHeader: 'tooltip-header',
+        tooltipLegendContainer: 'tooltip-legend-container',
+        tooltipLegend: 'tooltip-legend',
+        tooltipLegendValue: 'tooltip-legend__value',
+        tooltipLegendName: 'tooltip-legend__name'
+
+    },
+    light: {
+        chartArea: 'chart',
+        chartName: 'chart-name',
+        axisXLabelsContainer: 'axis-x-container',
+        navigationBar: 'navigation-bar',
+        navigationForegroundLeft: 'navigation-bar__foreground-left--light',
+        navigationForegroundWindow: 'navigation-bar__foreground-window--light',
+        navigationForegroundRight: 'navigation-bar__foreground-right--light',
+        navigationButton: 'navigation-bar__button',
+        tooltip: 'tooltip--light',
+        tooltipHeader: 'tooltip-header',
+        tooltipLegendContainer: 'tooltip-legend-container',
+        tooltipLegend: 'tooltip-legend',
+        tooltipLegendValue: 'tooltip-legend__value',
+        tooltipLegendName: 'tooltip-legend__name'
 
     }
 };
-
+const diagrams = [];
 
 class Diagram {
-    constructor(data) {
+    constructor(data, index) {
         this.root = document.createElement('div');
-
         this.chartArea = document.createElement('div');
+        this.chartName = document.createElement('h2');
+        this.chartName.innerText = data.name || 'Chart #'+index;
         this.chart = document.createElementNS(svgNS, 'svg');
         this.chartGroup = document.createElementNS(svgNS, 'g');
 
@@ -73,6 +92,8 @@ class Diagram {
         this.tooltipHeader = document.createElement('div');
         this.tooltipLegendContainer = document.createElement('div');
 
+        this.toggleThemeButton = document.createElement('button');
+
         this.axisX = {};
         this.lines = {};
         this.dataLength = 0;
@@ -80,7 +101,6 @@ class Diagram {
         this.maxVisibleValue = 0;
         this.visibleData = {from: 0, to: 0};
         this.state = {
-            theme: 'dark',
             navigationWindowWidth: 30,
             navigationWindowPositionLeft: 0,
             isDragging: false,
@@ -97,15 +117,22 @@ class Diagram {
 
     setClassnames = theme => {
         Object.keys(theme).forEach(elementName => {
+            console.log(elementName);
             const classNames = theme[elementName];
             if (classNames) {
                 const element = this[elementName];
                 if (element) {
+                    console.log(element);
                     element.removeAttribute('class');
                     element.classList.add(classNames);
                 }
             }
         })
+    }
+
+    changeTheme = () => {
+        console.log(theme);
+        this.setClassnames(themes[theme]);
     }
 
     processData = data => {
@@ -170,13 +197,13 @@ class Diagram {
         this.navigationChart.appendChild(polylineNavigation);
 
         line.tooltipLegend = document.createElement('div');
-        line.tooltipLegend.classList.add('tooltip-legend--'+this.state.theme);
+        line.tooltipLegend.classList.add('tooltip-legend');
 
         line.tooltipLegendValue = document.createElement('div');
-        line.tooltipLegendValue.classList.add('tooltip-legend_value--'+this.state.theme);
+        line.tooltipLegendValue.classList.add('tooltip-legend_value');
 
         line.tooltipLegendName = document.createElement('div');
-        line.tooltipLegendName.classList.add('tooltip-legend_name--'+this.state.theme);
+        line.tooltipLegendName.classList.add('tooltip-legend_name');
         line.tooltipLegendName.innerText = line.name;
 
         line.tooltipLegend.appendChild(line.tooltipLegendValue);
@@ -279,6 +306,8 @@ class Diagram {
     };
 
     refreshMaxValues = () => {
+        console.log('refreshMaxValues');
+        console.log('multiplierXChart', this.multiplierXChart);
         const oldVisibleValue = this.maxVisibleValue;
         this.maxValue = 0;
         this.maxVisibleValue = 0;
@@ -308,7 +337,7 @@ class Diagram {
         const multiplierXChart = this.multiplierXChart || this.axisXSize / (this.visibleData.to - this.visibleData.from);
         this.multiplierYChart = multiplierYChart;
         this.multiplierXChart = multiplierXChart;
-
+        console.log('multiplierXChart', this.multiplierXChart);
 
         this.axisYMarks = [...Array(axisYLinesCount)]
             .map((item, index) => Math.ceil((this.maxVisibleValue / axisYLinesCount) * index)).reverse();
@@ -316,7 +345,7 @@ class Diagram {
 
     refreshChartViewboxSize() {
         this.chart.setAttribute('viewBox',
-            `${0} 0 ${this.state.navigationWindowWidth * this.multiplierXChart * (this.dataLength - 1) / 100} ${axisYSize}`);
+            `${0} -10 ${this.state.navigationWindowWidth * this.multiplierXChart * (this.dataLength - 1) / 100} ${axisYSize}`);
     }
 
     transformChart = mode => {
@@ -361,11 +390,13 @@ class Diagram {
 
         this.createButtons();
 
-        this.setClassnames(themes[this.state.theme]);
+        this.setClassnames(themes[theme]);
+        this.root.appendChild(this.chartName);
         this.root.appendChild(this.chartArea);
         this.root.appendChild(this.axisXLabelsContainer);
         this.root.appendChild(this.navigationBar);
         this.root.appendChild(this.buttonsContainer);
+
         this.chartArea.appendChild(this.tooltip);
 
         document.getElementById('wrapper').appendChild(this.root);
@@ -452,6 +483,7 @@ class Diagram {
             this.tooltipHeader.innerText=`${data[0]}, ${data[1]} ${data[2]}`;
 
             Object.values(this.lines).forEach(line => {
+                console.log(this.multiplierXChart);
                 line.tooltipLegend.style.visibility = line.hidden ? 'hidden' : 'visible';
                 line.tooltipLegend.style.color = line.color;
                 line.tooltipLegendValue.innerText = line.rawData[index];
@@ -459,7 +491,7 @@ class Diagram {
                 line.circle.setAttribute('cx', Math.ceil(this.multiplierXChart * index));
                 line.circle.setAttribute('cy', Math.floor(this.multiplierYChart * (this.maxVisibleValue - line.rawData[index])));
                 line.circle.setAttribute('r', 5);
-                line.circle.setAttribute('fill', 'white');
+                line.circle.setAttribute('class', theme);
                 line.circle.setAttribute('stroke', line.color);
                 line.circle.setAttribute('stroke-width', 3);
             })
@@ -491,6 +523,7 @@ class Diagram {
         this.toggleTooltip();
         this.state.pointerCoords = {};
         this.multiplierXChart = null;
+        this.refreshMaxValues();
         if (this.state.mode === 'move') this.updateCharts(true);
         this.state.mode = null;
         this.animateButtom('hide');
@@ -583,10 +616,24 @@ class Diagram {
 
         this.chart.addEventListener('click', this.touchHandler, false);
         this.tooltip.addEventListener('click', this.toggleTooltip);
+
+        this.toggleThemeButton.addEventListener('click', this.toggleTheme);
         window.addEventListener('resize', this.resizeHandler);
     }
 }
-new Diagram(data[1]);
+
+
+function toggleTheme() {
+    document.body.classList.remove(theme);
+    theme = theme === 'dark' ? 'light' : 'dark';
+    document.body.classList.add(theme);
+    diagrams.forEach( diagram => diagram.changeTheme());
+}
+
+let theme = 'dark';
+document.body.classList.add(theme);
+diagrams.push (new Diagram(data[1], 1));
+document.getElementById('toggleThemeButton').addEventListener('click', toggleTheme);
 // new Diagram(data[2]);
 // new Diagram(data[3]);
 // new Diagram(data[4]);
