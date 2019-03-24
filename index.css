@@ -32,6 +32,9 @@ body.dark {
     margin: 20px 0 0 20px;
 }
 
+.chart-area {
+    margin-bottom: 50px;
+}
 .chart {
     position: relative;
     height: 380px;
@@ -186,7 +189,6 @@ body.dark {
 .axis-x-container--light {
     color: #96a2aa;
 }
-
 
 .axis-y-label {
     font-size: 12px;

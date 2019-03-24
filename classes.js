@@ -66,14 +66,13 @@ const themes = {
 
     }
 };
-const diagrams = [];
 
 class Diagram {
     constructor(data, index) {
         this.root = document.createElement('div');
         this.chartArea = document.createElement('div');
         this.chartName = document.createElement('h2');
-        this.chartName.innerText = data.name || 'Chart #'+index;
+        this.chartName.innerText = data.name || 'Chart #' + index;
         this.chart = document.createElementNS(svgNS, 'svg');
         this.chartGroup = document.createElementNS(svgNS, 'g');
 
@@ -246,30 +245,29 @@ class Diagram {
                 this.axisYElements[index].label.style.bottom = `calc( ${(100 / axisYLinesCount * (axisYLinesCount - index - 1))}% + 5px )`;
                 this.axisYElements[index].line.style.bottom = (100 / axisYLinesCount * index) + '%';
                 this.axisYElements[index].label.innerHTML = value;
-            } else
-            {
+            } else {
                 console.log(this.maxYValueChanged);
                 if (this.maxYValueChanged) {
                     const transform = this.maxYValueChanged < 0 ? 50 : -50;
                     const element = this.axisYElements[index].label;
                     element.classList.add('axis-y-label--animated');
-                    element.style.transform = 'translateY('+transform+'px)';
+                    element.style.transform = 'translateY(' + transform + 'px)';
                     element.style.opacity = 0.1;
                     setTimeout(() => {
                         element.classList.remove('axis-y-label--animated');
-                        element.style.transform = 'translateY('+-transform+'px)';
+                        element.style.transform = 'translateY(' + -transform + 'px)';
                         element.innerHTML = value;
-                        setTimeout( () => {
+                        setTimeout(() => {
                             element.classList.add('axis-y-label--animated');
                             element.style.opacity = 1;
                             element.style.transform = 'translateY(1px)';
-                        },50);
-                    },200);
-                } else  this.axisYElements[index].label.innerHTML = value;
+                        }, 50);
+                    }, 200);
+                } else this.axisYElements[index].label.innerHTML = value;
             }
         });
         this.maxYValueChanged = null;
-        if (animate){
+        if (animate) {
             // this.maxYValueHasChanged = false;
             Object.values(this.lines).forEach(line => {
                 if (line.hidden) return;
@@ -287,7 +285,7 @@ class Diagram {
                 setTimeout(() => {
                     line.polyline.setAttribute('points', line.chartData);
                     line.polyline.removeChild(line.animateScale);
-                }, 400 );
+                }, 400);
 
                 // line.chartData = newLineData;
                 // line.polyline.setAttribute('points', line.chartData);
@@ -349,8 +347,8 @@ class Diagram {
     }
 
     transformChart = mode => {
-        this.chartGroup.setAttribute('transform', `translate(${-(this.state.navigationWindowPositionLeft) * this.multiplierXChart * (this.dataLength-1) / 100}, 0)`);
-        this.axisXLabelsContainer.style.transform = `translateX(${-(this.state.navigationWindowPositionLeft) * this.multiplierXChart * (this.dataLength -1) / 100}px)`;
+        this.chartGroup.setAttribute('transform', `translate(${-(this.state.navigationWindowPositionLeft) * this.multiplierXChart * (this.dataLength - 1) / 100}, 0)`);
+        this.axisXLabelsContainer.style.transform = `translateX(${-(this.state.navigationWindowPositionLeft) * this.multiplierXChart * (this.dataLength - 1) / 100}px)`;
     };
 
     refreshChart() {
@@ -386,7 +384,7 @@ class Diagram {
         this.navigationBar.appendChild(this.navigationButton);
 
         this.tooltip.appendChild(this.tooltipHeader);
-        this.tooltip.appendChild(this.tooltipLegendContainer );
+        this.tooltip.appendChild(this.tooltipLegendContainer);
 
         this.createButtons();
 
@@ -398,6 +396,8 @@ class Diagram {
         this.root.appendChild(this.buttonsContainer);
 
         this.chartArea.appendChild(this.tooltip);
+
+        this.root.classList.add('chart-area');
 
         document.getElementById('wrapper').appendChild(this.root);
 
@@ -463,24 +463,25 @@ class Diagram {
         e.currentTarget.line.checkmarkSVGCheck.style.visibility = e.currentTarget.line.hidden ? 'hidden' : 'visible';
         this.updateCharts(true);
     };
-    toggleTooltip = (x,y) => {
-        if(!x || !y) {
+    toggleTooltip = (x, y) => {
+        if (!x || !y) {
             this.tooltip.style.display = 'none';
             Object.values(this.lines).forEach(line => {
                 if (line.circle) {
                     this.chartGroup.removeChild(line.circle);
                     delete (line.circle);
-                };
+                }
+                ;
             });
         } else {
             this.tooltip.style.display = 'block';
-            this.tooltip.style.left = this.axisXSize/2 > x ? x + 'px' : null;
-            this.tooltip.style.right = this.axisXSize/2 > x ? null : (this.axisXSize - x + 'px');
-            this.tooltip.style.top = axisYSize/2 > y ? y + 'px' : null;
-            this.tooltip.style.bottom = axisYSize/2 > y ? null : (axisYSize - y + 'px');
+            this.tooltip.style.left = this.axisXSize / 2 > x ? x + 'px' : null;
+            this.tooltip.style.right = this.axisXSize / 2 > x ? null : (this.axisXSize - x + 'px');
+            this.tooltip.style.top = axisYSize / 2 > y ? y + 'px' : null;
+            this.tooltip.style.bottom = axisYSize / 2 > y ? null : (axisYSize - y + 'px');
             const index = Math.floor(x / (this.axisXSize / (this.visibleData.to - this.visibleData.from))) + this.visibleData.from;
             const data = (new Date(this.axisX.data[index])).toDateString().split(' ');
-            this.tooltipHeader.innerText=`${data[0]}, ${data[1]} ${data[2]}`;
+            this.tooltipHeader.innerText = `${data[0]}, ${data[1]} ${data[2]}`;
 
             Object.values(this.lines).forEach(line => {
                 console.log(this.multiplierXChart);
@@ -519,7 +520,7 @@ class Diagram {
         e.preventDefault();
     };
     touchEndHandler = e => {
-        console.log('end');
+        if (!this.state.mode) return;
         this.toggleTooltip();
         this.state.pointerCoords = {};
         this.multiplierXChart = null;
@@ -542,14 +543,18 @@ class Diagram {
             };
             if (oldX) {
                 this.animateButtom('move', touchX, this.state.pointerCoords.y);
+                const deltaX = this.state.pointerCoords.x - oldX;
+                let descretizedDelta = deltaX;
+                if (descretizedDelta > 0 && descretizedDelta < 5) descretizedDelta = 5;
+                if (descretizedDelta < 0 && descretizedDelta > -5) descretizedDelta = -5;
 
                 const windowPositionLeftInPx = this.state.navigationWindowPositionLeft * this.navigationBar.offsetWidth / 100;
                 const windowWithInPx = this.state.navigationWindowWidth * this.navigationBar.offsetWidth / 100;
 
                 const navigationWindowPositionLeft =
-                    (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
+                    (windowPositionLeftInPx + deltaX) / this.navigationBar.offsetWidth * 100;
                 const navigationWindowWidth =
-                    (windowWithInPx - this.state.pointerCoords.x + oldX) / this.navigationBar.offsetWidth * 100;
+                    (windowWithInPx - deltaX) / this.navigationBar.offsetWidth * 100;
 
                 switch (this.state.mode) {
                     case 'move': {
@@ -560,7 +565,7 @@ class Diagram {
                                 this.state.navigationWindowPositionLeft = 100 - this.state.navigationWindowWidth;
                             } else
                                 this.state.navigationWindowPositionLeft =
-                                    (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
+                                    (windowPositionLeftInPx + deltaX) / this.navigationBar.offsetWidth * 100;
                         }
                         this.refreshMaxValues();
                         this.updateNavigationWindowDimensions();
@@ -572,7 +577,8 @@ class Diagram {
                             this.state.navigationWindowWidth = 100 - this.state.navigationWindowPositionLeft;
                         } else {
                             this.state.navigationWindowWidth =
-                                (windowWithInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
+                                (windowWithInPx + deltaX) / this.navigationBar.offsetWidth * 100;
+                            if (this.state.navigationWindowWidth < 10) this.state.navigationWindowWidth = 10;
                         }
                         this.multiplierXChart = null;
                         this.updateNavigationWindowDimensions();
@@ -580,10 +586,16 @@ class Diagram {
                         break;
                     }
                     case 'resizeRight': {
-                        this.state.navigationWindowPositionLeft =
-                            (windowPositionLeftInPx + this.state.pointerCoords.x - oldX) / this.navigationBar.offsetWidth * 100;
-                        this.state.navigationWindowWidth =
-                            (windowWithInPx - this.state.pointerCoords.x + oldX) / this.navigationBar.offsetWidth * 100;
+                        if (navigationWindowPositionLeft > 0) {
+                            const newNavigationWindowPositionLeft =
+                                (windowPositionLeftInPx + deltaX) / this.navigationBar.offsetWidth * 100;
+                            const newNavigationWindowWidth =
+                                (windowWithInPx - deltaX) / this.navigationBar.offsetWidth * 100;
+                            if (newNavigationWindowWidth - this.state.navigationWindowPositionLeft)
+                            this.state.navigationWindowPositionLeft = newNavigationWindowPositionLeft;
+                            this.state.navigationWindowWidth = newNavigationWindowWidth;
+                        } else this.state.navigationWindowPositionLeft = 0;
+                        if (this.state.navigationWindowWidth < 10) this.state.navigationWindowWidth = 10;
                         this.multiplierXChart = null;
                         this.updateNavigationWindowDimensions();
                         this.updateCharts();
@@ -627,14 +639,12 @@ function toggleTheme() {
     document.body.classList.remove(theme);
     theme = theme === 'dark' ? 'light' : 'dark';
     document.body.classList.add(theme);
-    diagrams.forEach( diagram => diagram.changeTheme());
+    diagrams.forEach(diagram => diagram.changeTheme());
 }
 
 let theme = 'dark';
 document.body.classList.add(theme);
-diagrams.push (new Diagram(data[1], 1));
+
+const diagrams = data.map((chartData, index) => new Diagram(chartData, index+1));
+
 document.getElementById('toggleThemeButton').addEventListener('click', toggleTheme);
-// new Diagram(data[2]);
-// new Diagram(data[3]);
-// new Diagram(data[4]);
-// new Diagram(data[5]);
