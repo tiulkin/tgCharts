@@ -262,6 +262,7 @@ button {
     transition: all 0.4s ease-in;
     transition: color 0.7s;
     margin-bottom: 50px;
+    cursor: pointer;
 }
 
 .chart-button-svg {

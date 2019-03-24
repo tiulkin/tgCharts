@@ -2,8 +2,356 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width,user-scalable=no">
+    <style>
+        body {
+            margin: 0 15px;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: white;
+            color: black;
+            fill: white;
+        }
+        body.dark {
+            background-color: #242f3e;
+            color: white;
+            fill:#242f3e;
+        }
+        button {
+            outline: 0;
+        }
+
+        #wrapper {
+            width: 100%;
+            background: transparent;
+        }
+        #toggleThemeButton {
+            position:fixed;
+            bottom:20px;
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            background: none;
+            border: none;
+            color: #36a8f1;
+            font-size: 16px;
+        }
+        .chart-name {
+            margin: 20px 0 0 20px;
+        }
+
+        .chart-area {
+            overflow: hidden;
+        }
+        .chart {
+            position: relative;
+            height: 380px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .axis-x-container {
+            font-size: 10px;
+            width: 100%;
+            display: flex;
+            height: 30px;
+            position: relative;
+        }
+
+        .hidden {
+            visibility: hidden!important;
+            width: 0;
+            opacity: 0!important;
+            transform: translateX(100px);
+            z-index: 1;
+        }
+
+        .navigation-bar {
+            position: relative;
+            height: 60px;
+            cursor: pointer;
+        }
+
+        .navigation-bar__foreground-left--dark {
+            background-color: #1f2a38;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 0.7;
+            z-index: 1;
+        }
+        .navigation-bar__foreground-left--light {
+            background-color: #e1e9ef;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 0.7;
+            z-index: 1;
+        }
+
+        .navigation-bar__foreground-right--dark {
+            background-color: #1f2a38;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            opacity: 0.7;
+            z-index: 1;
+        }
+
+        .navigation-bar__foreground-right--light {
+            background-color: #e1e9ef;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            opacity: 0.7;
+            z-index: 1;
+        }
+
+        .navigation-bar__foreground-window--light {
+            background-color: transparent;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            z-index: 2;
+            border-top: 3px solid #40566b;
+            border-left: 10px solid #40566b;
+            border-right: 10px solid #40566b;
+            border-bottom: 3px solid #40566b;
+            opacity: 0.5;
+        }
+
+        .navigation-bar__foreground-window--dark {
+            background-color: transparent;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            z-index: 2;
+            border-top: 3px solid #96ccf0;
+            border-left: 10px solid #96ccf0;
+            border-right: 10px solid #96ccf0;
+            border-bottom: 3px solid #96ccf0;
+            opacity: 0.5;
+        }
+
+        .navigation-bar__button {
+            position: absolute;
+            margin: -35px 0 0 -35px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 2;
+            background: rgba(111, 148, 182, 0.1);
+        }
+
+        .navigation-bar__button--pressed {
+            animation: anim-effect 0.3s forwards;
+        }
+
+        .axis-x-label {
+            width: 35px;
+            color: #96a2aa;
+            top:0;
+            height: 20px;
+            line-height: 20px;
+            opacity: 1;
+            visibility: visible;
+            white-space: nowrap;
+            position: absolute;
+            transition: visibility 0s linear, opacity 1s linear, transform 500ms linear;
+            -o-transition: visibility 0s linear, opacity 1s linear, transform 500ms linear;
+            -moz-transition: visibility 0s linear, opacity 1s linear, transform 500ms linear;
+            -webkit-transition: visibility 0s linear, opacity 1s linear, transform 500ms linear;
+        }
+
+        .axis-x-container--dark {
+            color: #96a2aa;
+        }
+        .axis-x-container--light {
+            color: #96a2aa;
+        }
+
+        .axis-y-label {
+            font-size: 12px;
+            left: 0;
+            color: #96a2aa;
+            position: absolute;
+        }
+        .axis-y-label--animated {
+            transition: opacity 200ms linear, transform 200ms ease-out;
+        }
+
+        .axis-y-line {
+            height: 1px;
+            left: 0;
+            right: 0;
+            background-color: #40566b;
+            position: absolute;
+            z-index: -1;
+        }
+
+        .tooltip--dark {
+            display: none;
+            padding: 10px;
+            position: absolute;
+            min-width: 100px;
+            border: #000 1x solid;
+            border-radius: 4px 4px;
+            background-color: #253241;
+            box-shadow: 0px 0px 6px 0px rgba(200,200,200,0.5);
+            z-index: 2;
+        }
+        .tooltip--dark.tooltip-header{
+            color: white;
+        }
+
+        .tooltip--light {
+            display: none;
+            padding: 10px;
+            position: absolute;
+            min-width: 100px;
+            border: #40566b 1x solid;
+            border-radius: 4px 4px;
+            box-shadow: 0px 0px 6px 0px rgba(200,200,200,0.5);
+            background-color: white;
+            z-index: 2;
+        }
+
+        .tooltip-legend-container {
+            display: flex;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .tooltip-legend{
+            flex: auto;
+            margin-right: 5px;
+        }
+
+        .tooltip-legend_value{
+            font-weight: bold;
+        }
+        .tooltip-legend_name{
+            font-size: 16px;
+            margin: 5px;
+        }
+        .tooltip-header {
+            font-weight: 400;
+            margin: auto;
+        }
+
+        @keyframes anim-effect {
+            0% {
+                transform: scale3d(0.3, 0.3, 1);
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .line {
+            fill: none;
+        }
+
+        .chart-button {
+            position: relative;
+            padding: 0;
+            display: inline-block;
+            height: 46px;
+            border: #ccc solid 1px;
+            border-radius: 46px 46px;
+            margin-right: 20px;
+            margin-top: 20px;
+            transition: all 0.4s ease-in;
+            margin-bottom: 50px;
+            cursor: pointer;
+        }
+
+        .chart-button-svg {
+            height: 46px;
+            margin-left: 10px;
+        }
+        chart-button-svg-check{
+            transition: visibility 1s ease-out;
+        }
+        .chart-button-name {
+            display: inline-block;
+            margin-left: 10px;
+            min-width: 50px;
+            text-align: left;
+            line-height: 46px;
+            height: 46px;
+            float: right;
+        }
+
+        .chart-button::after {
+             content: '';
+             position: absolute;
+             top: 50%;
+             left: 25px;
+             margin: -35px 0 0 -35px;
+             width: 70px;
+             height: 70px;
+             border-radius: 50%;
+             opacity: 0;
+             pointer-events: none;
+             background: rgba(111,148,182,0.1);
+             z-index: 6;
+         }
+        .chart-button::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            /*margin: 3px;*/
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            background: white;
+            z-index: 5;
+        }
+        .chart-button.chart-button--click::after {
+            animation: chart-button-anim 0.5s forwards;
+        }
+        .chart-button.chart-button--click::before {
+            animation: chart-button-anim1 0.3s forwards;
+        }
+        .chart-button.chart-button--click.chart-button--off::before {
+            animation: chart-button-anim1 0.3s reverse;
+        }
+        @keyframes chart-button-anim1{
+            0% {
+                background-color: white;
+                transform: scale3d(0.1, 0.1, 1);
+            }
+            25%, 50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: scale3d(1, 1, 1);
+            }
+        }
+        @keyframes chart-button-anim{
+            0% {
+                transform: scale3d(0.3, 0.3, 1);
+            }
+            25%, 50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: scale3d(1.1, 1.1, 1);
+            }
+        }
+    </style>
     <script type="module" src="classes.js"></script>
-    <link rel="stylesheet" media="screen" href="index.css?j"/>
+
 <head>
 
 <body>
